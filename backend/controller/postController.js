@@ -104,3 +104,20 @@ export const getPostOfFollowing = (async (req, res, next) => {
     }
 })
 
+export const updateCaption = async (req, res, next) => {
+    try {
+        const post = await postModel.findById(req.params.id);
+        if (!post) {
+            next(new ErrorHandler('post not found', 404));
+            return;
+        }
+        if (post.owner.toString() !== req.user._id.toString()) {
+            next(new ErrorHandler('unathourised ', 401));
+        }
+        post.caption = req.body.caption;
+        await post.save();
+        next(new ErrorHandler('post caption updated ', 200));
+    } catch (error) {
+        next(new ErrorHandler(error.message, 500));
+    }
+};

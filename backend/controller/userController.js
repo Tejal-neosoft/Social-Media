@@ -1,6 +1,6 @@
 import ErrorHandler from '../utils/ErrorHandler.js';
 import userModel from '../models/userModel.js'
-import { sendData } from '../middleware/SendData.js'
+import { sendData, sendPost } from '../middleware/SendData.js'
 
 export const register = (async (req, res, next) => {
     try {
@@ -103,3 +103,44 @@ export const follow = (async (req, res, next) => {
         next(new ErrorHandler(error.message, 500));
     }
 })
+
+
+export const updateProfile = async (req, res, next) => {
+    try {
+        const user = await userModel.findById(req.user._id);
+
+        const { name, email, avatar } = req.body;
+
+        if (name) {
+            user.name = name;
+        }
+        if (email) {
+            user.email = email;
+        }
+
+
+        await user.save();
+
+        next(new ErrorHandler("Profile updated", 200));
+
+
+    } catch (error) {
+        next(new ErrorHandler(error.message, 500));
+
+    }
+};
+
+export const myProfile = async (req, res) => {
+    try {
+        const user = await userModel.findById(req.user._id).populate(
+            "posts followers following"
+        );
+
+        sendPost(user, 202, res)
+
+    } catch (error) {
+        next(new ErrorHandler(error.message, 500));
+    }
+};
+
+
