@@ -1,5 +1,6 @@
 import ErrorHandler from '../utils/ErrorHandler.js';
 import userModel from '../models/userModel.js'
+import postModel from '../models/postModel.js'
 import { sendData, sendPost } from '../middleware/SendData.js'
 
 export const register = (async (req, res, next) => {
@@ -104,43 +105,127 @@ export const follow = (async (req, res, next) => {
     }
 })
 
+export const updatePassword = (async (req, res, next) => {
+    try {
+        const user = await userModel.findById(req.user._id).select("+password");
 
-export const updateProfile = async (req, res, next) => {
+        const { oldpassword, newpassword } = req.body;
+
+        if (!oldpassword || !newpassword) {
+            next(new ErrorHandler("Password should not be empty", 400));
+
+        }
+
+        const isMatch = await user.matchPassword(oldpassword);
+        console.log(isMatch)
+
+        if (!isMatch) {
+            next(new ErrorHandler("Incorrect old password", 404));
+        }
+
+        user.password = newpassword;
+        await user.save();
+        next(new ErrorHandler("password updated", 200));
+
+    }
+    catch (error) {
+        next(new ErrorHandler(error.message, 500));
+    }
+})
+
+export const updateProfile = (async (req, res, next) => {
     try {
         const user = await userModel.findById(req.user._id);
-
-        const { name, email, avatar } = req.body;
+        const { name, email } = req.body;
+        console.log(name, email)
+        console.log(user)
 
         if (name) {
-            user.name = name;
+            user.name = name
         }
         if (email) {
-            user.email = email;
+            user.email = email
+        }
+        await user.save()
+        next(new ErrorHandler("profile updated succesfully", 201));
+
+
+    }
+    catch (error) {
+        next(new ErrorHandler(error.message, 500));
+    }
+})
+
+export const deleteMyProfile = (async (req, res, next) => {
+    try {
+        const user = await userModel.findById(req.user._id);
+        const post = user.posts;
+        const followersData = user.followers
+        const followingData = user.following
+        const userId = user._id
+
+        await user.remove()
+        res.cookie("token", null, { expires: new Date(Date.now()), httpOnly: true })
+
+        for (let i = 0; i < post.length; i++) {
+            const postsdata = await postModel.findById(post[i])
+            console.log(postsdata)
+            postsdata.remove()
         }
 
+        for (let i = 0; i < followersData.length; i++) {
+            const follower = await userModel.findById(followersData[i])
+            const index = follower.following.indexOf(userId);
+            follower.following.splice(index, 1)
+            await follower.save()
+        }
 
-        await user.save();
+        for (let i = 0; i < followingData.length; i++) {
+            const follows = await userModel.findById(followingData[i])
+            const index = follows.followers.indexOf(userId);
+            follows.followers.splice(index, 1)
+            await follows.save()
+        }
 
-        next(new ErrorHandler("Profile updated", 200));
-
-
-    } catch (error) {
-        next(new ErrorHandler(error.message, 500));
+        next(new ErrorHandler("profile deleted successfully", 200));
 
     }
-};
+    catch (error) {
+        next(new ErrorHandler(error.message, 500));
+    }
 
-export const myProfile = async (req, res) => {
+})
+
+export const myProfile = (async (req, res, next) => {
     try {
-        const user = await userModel.findById(req.user._id).populate(
-            "posts followers following"
-        );
-
+        const user = await userModel.findById(req.user._id).populate("posts")
         sendPost(user, 202, res)
 
-    } catch (error) {
+    }
+    catch (error) {
         next(new ErrorHandler(error.message, 500));
     }
-};
+})
+export const getUserProfile = (async (req, res, next) => {
+    try {
+        const user = await userModel.findById(req.params.id).populate("posts")
+        if (!user) {
+            next(new ErrorHandler("user not found", 404));
+        }
+        sendPost(user, 202, res)
 
+    }
+    catch (error) {
+        next(new ErrorHandler(error.message, 500));
+    }
+})
 
+export const getAllProfile = (async (req, res, next) => {
+    try {
+        const user = await userModel.find({})
+        sendPost(user, 202, res)
+    }
+    catch (error) {
+        next(new ErrorHandler(error.message, 500));
+    }
+})
