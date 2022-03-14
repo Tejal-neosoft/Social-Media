@@ -111,7 +111,7 @@ export const updateCaption = (async (req, res, next) => {
         const { caption } = req.body;
 
         if (!post) {
-            next(new ErrorHandler("No post Available", 500));
+            next(new ErrorHandler("No post Available", 404));
         }
 
         if (post.owner.toString() !== req.user._id.toString()) {
@@ -122,6 +122,89 @@ export const updateCaption = (async (req, res, next) => {
         await post.save();
 
         next(new ErrorHandler("caption updated succesfully", 200));
+    }
+    catch (error) {
+        next(new ErrorHandler(error.message, 500));
+    }
+})
+
+export const addUpdateComment = (async (req, res, next) => {
+
+    try {
+        const post = await postModel.findById(req.params.id);
+
+        if (!post) {
+            next(new ErrorHandler("No post Available", 404));
+        }
+        let commentIndex = -1
+
+        post.comments.forEach((item, index) => {
+            if (item.user.toString() === req.user._id.toString()) {
+                commentIndex = index
+            }
+        })
+
+        if (commentIndex !== -1) {
+            post.comments[commentIndex].comment = req.body.comment;
+            await post.save();
+            next(new ErrorHandler("comment updated", 200));
+        }
+        else {
+            post.comments.push({
+                user: req.user._id,
+                comment: req.body.comment
+            })
+
+            await post.save();
+            next(new ErrorHandler("comment added", 200));
+
+
+        }
+    }
+    catch (error) {
+        next(new ErrorHandler(error.message, 500));
+
+    }
+
+
+
+})
+
+export const deleteComment = (async (req, res, next) => {
+    try {
+        const post = await postModel.findById(req.params.id)
+
+        if (!post) {
+            next(new ErrorHandler("post not found", 404));
+        }
+
+        if (!req.body.commentId) {
+            next(new ErrorHandler("comment not found", 404));
+
+        }
+
+        if (post.owner.toString() === req.user._id.toString()) { //login user who posted post
+            post.comments.forEach((item, index) => {
+                if (item._id.toString() === req.body.commentId.toString()) {
+                    return post.comments.splice(index, 1)
+                }
+            })
+
+            await post.save();
+            next(new ErrorHandler("selected comment  deleted succesfully", 200));
+
+
+        }
+        else { //user who commented on post
+            post.comments.forEach((item, index) => {
+                if (item.user.toString() === req.user._id.toString()) {
+                    return post.comments.splice(index, 1)
+                }
+            })
+            await post.save();
+            next(new ErrorHandler(" your comment deleted succesfully", 200));
+        }
+
     }
     catch (error) {
         next(new ErrorHandler(error.message, 500));

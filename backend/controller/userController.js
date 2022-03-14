@@ -2,6 +2,9 @@ import ErrorHandler from '../utils/ErrorHandler.js';
 import userModel from '../models/userModel.js'
 import postModel from '../models/postModel.js'
 import { sendData, sendPost } from '../middleware/SendData.js'
+import { sendEmail } from '../middleware/sendEmail.js';
+import crypto from 'crypto'
+
 
 export const register = (async (req, res, next) => {
     try {
@@ -229,3 +232,72 @@ export const getAllProfile = (async (req, res, next) => {
         next(new ErrorHandler(error.message, 500));
     }
 })
+
+export const forgetPassword = (async (req, res, next) => {
+    try {
+        const user = await userModel.findOne({ email: req.body.email })
+
+        if (!user) {
+            next(new ErrorHandler("User does not exist", 404));
+            return
+        }
+
+        const resetPasswordToken = user.getResetPasswordToken();
+
+        await user.save();
+
+        const resetUrl = `${req.protocol}://${req.get("host")}/api/resetPassword/${resetPasswordToken}`
+
+        const message = `reset password link ${resetUrl}`;
+
+        try {
+            sendEmail({
+                email: user.email,
+                subject: "Reset Password",
+                message
+            })
+            next(new ErrorHandler("Email sent successfully ", 202));
+            return
+
+        }
+        catch (error) {
+            console.log(error.message)
+            user.resetPasswordToken = undefined;
+            user.resetPasswordExpire = undefined;
+            next(new ErrorHandler(error.message, 500));
+            return
+        }
+    }
+    catch (error) {
+        next(new ErrorHandler(error.message, 500));
+    }
+})
+
+export const resetPassword = (async (req, res, next) => {
+    try {
+        const resetToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+
+        const user = await userModel.findOne({
+            resetPasswordToken: resetToken,
+            resetPasswordExpire: { $gt: Date.now() }
+        })
+
+        if (!user) {
+            next(new ErrorHandler("Invalid token or has expired", 401));
+
+        }
+        user.password = req.body.password
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+        await user.save()
+        next(new ErrorHandler("password reset", 500));
+
+    }
+    catch (error) {
+        next(new ErrorHandler(error.message, 500));
+
+    }
+})
+
+
+
