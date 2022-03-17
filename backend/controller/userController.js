@@ -1,6 +1,6 @@
 import ErrorHandler from '../utils/ErrorHandler.js';
-import userModel from '../models/userModel.js'
-import postModel from '../models/postModel.js'
+import userModel from '../model/userModel.js'
+import postModel from '../model/postModel.js'
 import { sendData, sendPost } from '../middleware/SendData.js'
 import { sendEmail } from '../middleware/sendEmail.js';
 import crypto from 'crypto'

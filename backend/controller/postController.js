@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import ErrorHandler from '../utils/ErrorHandler.js';
-import postModel from '../models/postModel.js';
-import userModel from '../models/userModel.js';
+import postModel from '../model/postModel.js';
+import userModel from '../model/userModel.js';
 import { sendPost } from '../middleware/SendData.js'
 
 export const createPost = (async (req, res, next) => {

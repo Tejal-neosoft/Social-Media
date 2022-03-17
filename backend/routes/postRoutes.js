@@ -1,6 +1,6 @@
 import express from 'express'
 import { isAuthenticated } from '../middleware/auth.js'
-import { createPost, likeAndUnlikePost, deletePost, getPostOfFollowing, updateCaption, addUpdateComment, deleteComment } from '../controller/postControllers.js'
+import { createPost, likeAndUnlikePost, deletePost, getPostOfFollowing, updateCaption, addUpdateComment, deleteComment } from '../controller/postController.js'
 const router = express.Router()
 
 router.route('/create').post(isAuthenticated, createPost)
