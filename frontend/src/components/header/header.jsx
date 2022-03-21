@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from "react-router-dom";
-import './header.css'
+import './Header.css'
 import { Home, HomeOutlined, Add, AddOutlined, SearchOutlined, Search, AccountCircle, AccountCircleOutlined, } from "@mui/icons-material";
 function Header() {
     const [tab, setTab] = useState(window.location.pathname)
